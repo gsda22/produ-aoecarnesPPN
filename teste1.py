@@ -110,6 +110,20 @@ def salvar_transformacao(data, cod_ori, desc_ori, qtd, unidade, cod_dest, desc_d
     except Exception as e:
         st.error(f"Erro ao salvar transformação: {e}")
 
+def limpar_dados():
+    if st.button("Limpar Dados"):
+        st.warning("Tem certeza que deseja limpar todos os dados de lançamentos e transformações? Essa ação não pode ser desfeita!")
+        if st.button("Confirmar Limpeza"):
+            try:
+                with sqlite3.connect('produtos.db', check_same_thread=False) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM lancamentos")
+                    cursor.execute("DELETE FROM transformacoes")
+                    conn.commit()
+                st.success("Todos os dados de lançamentos e transformações foram limpos com sucesso!")
+            except Exception as e:
+                st.error(f"Erro ao limpar dados: {e}")
+
 # Função para avaliar expressões com soma e subtração
 def avaliar_expressao(expressao):
     try:
@@ -329,9 +343,19 @@ with abas[3]:
         df_lanc = pd.read_sql_query("SELECT * FROM lancamentos ORDER BY data DESC", conn)
     st.dataframe(df_lanc)
 
+    # Filtros de data
+    col1, col2 = st.columns(2)
+    with col1:
+        data_inicio = st.date_input("Data Inicial", value=datetime(2025, 1, 1))
+    with col2:
+        data_fim = st.date_input("Data Final", value=datetime.today())
+
     if not df_lanc.empty:
+        # Filtrar por data
+        df_lanc['data'] = pd.to_datetime(df_lanc['data'])
+        df_lanc = df_lanc[(df_lanc['data'] >= pd.Timestamp(data_inicio)) & (df_lanc['data'] <= pd.Timestamp(data_fim))]
         # Depuração: Exibir dados brutos
-        st.write("Dados brutos de lançamentos:", df_lanc)
+        st.write("Dados brutos de lançamentos (filtrados):", df_lanc)
         # Converter quantidade para float e substituir NaN por 0
         df_lanc['quantidade'] = pd.to_numeric(df_lanc['quantidade'], errors='coerce').fillna(0)
         output = io.BytesIO()
@@ -357,8 +381,11 @@ with abas[3]:
     st.dataframe(df_transf)
 
     if not df_transf.empty:
+        # Filtrar por data
+        df_transf['data'] = pd.to_datetime(df_transf['data'])
+        df_transf = df_transf[(df_transf['data'] >= pd.Timestamp(data_inicio)) & (df_transf['data'] <= pd.Timestamp(data_fim))]
         # Depuração: Exibir dados brutos
-        st.write("Dados brutos de transformações:", df_transf)
+        st.write("Dados brutos de transformações (filtrados):", df_transf)
         # Converter quantidade para float e substituir NaN por 0
         df_transf['quantidade'] = pd.to_numeric(df_transf['quantidade'], errors='coerce').fillna(0)
         output = io.BytesIO()
@@ -377,3 +404,6 @@ with abas[3]:
             file_name="transformacoes_fast.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+    # Botão para limpar dados
+    limpar_dados()
