@@ -110,19 +110,19 @@ def salvar_transformacao(data, cod_ori, desc_ori, qtd, unidade, cod_dest, desc_d
     except Exception as e:
         st.error(f"Erro ao salvar transformação: {e}")
 
-def limpar_dados():
-    if st.button("Limpar Dados"):
-        st.warning("Tem certeza que deseja limpar todos os dados de lançamentos e transformações? Essa ação não pode ser desfeita!")
-        if st.button("Confirmar Limpeza"):
+def excluir_dados():
+    if st.button("Excluir Dados"):
+        st.warning("Tem certeza que deseja excluir todos os dados de lançamentos e transformações? Essa ação não pode ser desfeita!")
+        if st.button("Confirmar Exclusão"):
             try:
                 with sqlite3.connect('produtos.db', check_same_thread=False) as conn:
                     cursor = conn.cursor()
                     cursor.execute("DELETE FROM lancamentos")
                     cursor.execute("DELETE FROM transformacoes")
                     conn.commit()
-                st.success("Todos os dados de lançamentos e transformações foram limpos com sucesso!")
+                st.success("Todos os dados de lançamentos e transformações foram excluídos com sucesso!")
             except Exception as e:
-                st.error(f"Erro ao limpar dados: {e}")
+                st.error(f"Erro ao excluir dados: {e}")
 
 # Função para avaliar expressões com soma e subtração
 def avaliar_expressao(expressao):
@@ -405,5 +405,5 @@ with abas[3]:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # Botão para limpar dados
-    limpar_dados()
+    # Botão para excluir dados
+    excluir_dados()
