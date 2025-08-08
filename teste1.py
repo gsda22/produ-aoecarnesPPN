@@ -110,19 +110,23 @@ def salvar_transformacao(data, cod_ori, desc_ori, qtd, unidade, cod_dest, desc_d
     except Exception as e:
         st.error(f"Erro ao salvar transformação: {e}")
 
-def excluir_dados(data_inicio, data_fim):
-    if st.button("Excluir Dados"):
-        st.warning(f"Tem certeza que deseja excluir todos os dados de lançamentos e transformações entre {data_inicio} e {data_fim}? Essa ação não pode ser desfeita!")
+def excluir_registro(tabela, ids):
+    if st.button(f"Excluir Registros Selecionados ({tabela})"):
+        st.warning(f"Tem certeza que deseja excluir os registros selecionados da tabela {tabela}? Essa ação não pode ser desfeita!")
         if st.button("Confirmar Exclusão"):
             try:
                 with sqlite3.connect('produtos.db', check_same_thread=False) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("DELETE FROM lancamentos WHERE data >= ? AND data <= ?", (data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")))
-                    cursor.execute("DELETE FROM transformacoes WHERE data >= ? AND data <= ?", (data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")))
-                    conn.commit()
-                st.success(f"Todos os dados de lançamentos e transformações entre {data_inicio} e {data_fim} foram excluídos com sucesso!")
+                    if ids:
+                        placeholders = ','.join('?' for _ in ids)
+                        query = f"DELETE FROM {tabela} WHERE id IN ({placeholders})"
+                        cursor.execute(query, ids)
+                        conn.commit()
+                        st.success(f"Registros da tabela {tabela} excluídos com sucesso!")
+                    else:
+                        st.warning("Nenhum registro selecionado para exclusão.")
             except Exception as e:
-                st.error(f"Erro ao excluir dados: {e}")
+                st.error(f"Erro ao excluir registros: {e}")
 
 # Função para avaliar expressões com soma e subtração
 def avaliar_expressao(expressao):
@@ -375,6 +379,10 @@ with abas[3]:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
+        # Seleção de IDs para exclusão
+        ids_selecionados_lanc = st.multiselect("Selecione os IDs para excluir", df_lanc['id'].tolist())
+        excluir_registro("lancamentos", ids_selecionados_lanc)
+
     st.subheader("📊 Relatórios de Transformações")
     with sqlite3.connect('produtos.db', check_same_thread=False) as conn:
         df_transf = pd.read_sql_query("SELECT * FROM transformacoes ORDER BY data DESC", conn)
@@ -405,5 +413,6 @@ with abas[3]:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # Botão para excluir dados filtrados
-    excluir_dados(data_inicio, data_fim)
+        # Seleção de IDs para exclusão
+        ids_selecionados_transf = st.multiselect("Selecione os IDs para excluir", df_transf['id'].tolist())
+        excluir_registro("transformacoes", ids_selecionados_transf)
