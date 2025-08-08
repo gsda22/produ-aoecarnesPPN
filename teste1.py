@@ -110,17 +110,17 @@ def salvar_transformacao(data, cod_ori, desc_ori, qtd, unidade, cod_dest, desc_d
     except Exception as e:
         st.error(f"Erro ao salvar transformação: {e}")
 
-def excluir_dados():
+def excluir_dados(data_inicio, data_fim):
     if st.button("Excluir Dados"):
-        st.warning("Tem certeza que deseja excluir todos os dados de lançamentos e transformações? Essa ação não pode ser desfeita!")
+        st.warning(f"Tem certeza que deseja excluir todos os dados de lançamentos e transformações entre {data_inicio} e {data_fim}? Essa ação não pode ser desfeita!")
         if st.button("Confirmar Exclusão"):
             try:
                 with sqlite3.connect('produtos.db', check_same_thread=False) as conn:
                     cursor = conn.cursor()
-                    cursor.execute("DELETE FROM lancamentos")
-                    cursor.execute("DELETE FROM transformacoes")
+                    cursor.execute("DELETE FROM lancamentos WHERE data >= ? AND data <= ?", (data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")))
+                    cursor.execute("DELETE FROM transformacoes WHERE data >= ? AND data <= ?", (data_inicio.strftime("%Y-%m-%d"), data_fim.strftime("%Y-%m-%d")))
                     conn.commit()
-                st.success("Todos os dados de lançamentos e transformações foram excluídos com sucesso!")
+                st.success(f"Todos os dados de lançamentos e transformações entre {data_inicio} e {data_fim} foram excluídos com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao excluir dados: {e}")
 
@@ -405,5 +405,5 @@ with abas[3]:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # Botão para excluir dados
-    excluir_dados()
+    # Botão para excluir dados filtrados
+    excluir_dados(data_inicio, data_fim)
